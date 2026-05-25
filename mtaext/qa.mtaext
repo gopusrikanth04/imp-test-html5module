@@ -1,0 +1,20 @@
+_schema-version: "3.2"
+ID: nshtml5module-qa
+
+extends: nshtml5module
+
+resources:
+
+  - name: nshtml5module-destination-service
+    parameters:
+      service-name: nshtml5module-destination-service-qa
+
+  - name: nshtml5module-uaa
+    parameters:
+      service-name: nshtml5module-xsuaa-service-qa
+      config:
+        xsappname: nshtml5module-qa
+
+  - name: nshtml5module-repo-host
+    parameters:
+      service-name: nshtml5module-html5-service-qa
