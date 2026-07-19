@@ -14,7 +14,7 @@
     "@sap/ux-ui5-tooling": "1",
     "@sap-ux/eslint-plugin-fiori-tools": "^10.0.0",
     "cross-var": "^1.1.0",
-    "eslint": "^10",
+    "eslint": "^9",
     "ui5-task-zipper": "^3.4.x",
     "rimraf": "^5.0.5",
     "mbt": "^1.2.29",
@@ -51,7 +51,8 @@
     "deploy:cf": "cross-var cf deploy mta_archives/nshtml5module_$npm_package_version.mtar",
     "deploy:cf-dev": "cross-var cf deploy mta_archives/nshtml5module_$npm_package_version.mtar -e mtaext/dev.mtaext",
     "deploy:cf-qa": "cross-var cf deploy mta_archives/nshtml5module_$npm_package_version.mtar -e mtaext/qa.mtaext",
-    "deploy:cf-prod": "cross-var cf deploy mta_archives/nshtml5module_$npm_package_version.mtar -e mtaext/prod.mtaext"
+    "deploy:cf-prod": "cross-var cf deploy mta_archives/nshtml5module_$npm_package_version.mtar -e mtaext/prod.mtaext",
+    "lint:sonar": "eslint . -f json -o eslint-report.json"
   },
   "sapuxLayer": "CUSTOMER_BASE"
 }
