@@ -18,3 +18,20 @@ resources:
   - name: nshtml5module-repo-host
     parameters:
       service-name: nshtml5module-html5-service-prod
+
+modules:
+  - name: nshtml5module-destination-content
+    parameters:
+      content:
+        instance:
+          destinations:
+            - Name: nshtml5module_html_repo_host
+              ServiceInstanceName: nshtml5module-html5-service-prod
+              ServiceKeyName: nshtml5module-repo-host-key
+              sap.cloud.service: nshtml5module
+
+            - Authentication: OAuth2UserTokenExchange
+              Name: nshtml5module_uaa
+              ServiceInstanceName: nshtml5module-xsuaa-service-prod
+              ServiceKeyName: nshtml5module-uaa-key
+              sap.cloud.service: nshtml5module
