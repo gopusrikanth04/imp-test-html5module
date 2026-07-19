@@ -10,12 +10,9 @@ module.exports = function(config) {
     .flat()
     .find(i => i.family === 'IPv4' && !i.internal)?.address || 'localhost';
 
-  // ─── Inline SonarQube Generic Test Execution reporter ───────────────────────
-  // Writes reports/test-execution.xml in SonarQube Generic format.
-  // Does NOT crash on OPA5/QUnit tests unlike karma-sonarqube-unit-reporter.
+  // ─── Inline SonarQube Generic Test Execution reporter ───────────────
   function SonarGenericReporter(baseReporterDecorator) {
     baseReporterDecorator(this);
-
     const specResults = [];
 
     this.onSpecComplete = function(browser, result) {
@@ -30,57 +27,43 @@ module.exports = function(config) {
     };
 
     this.onRunComplete = function() {
-      // Group by suite → one <file> per suite
       var suiteMap = {};
       specResults.forEach(function(r) {
         var key = r.suite || 'General';
-        if (!suiteMap[key]) suiteMap[key] = [];
-        suiteMap[key].push(r);
+        (suiteMap[key] = suiteMap[key] || []).push(r);
       });
 
       function escapeXml(str) {
         return String(str || '')
-          .replace(/&/g,  '&amp;')
-          .replace(/</g,  '&lt;')
-          .replace(/>/g,  '&gt;')
-          .replace(/"/g,  '&quot;')
-          .replace(/'/g,  '&apos;');
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;').replace(/'/g, '&apos;');
       }
 
+      // Map suite name → REAL test file path under sonar.tests (webapp/test)
+      // NO "HTML5Module/" prefix — pipeline uses sonar.tests=webapp/test
       function suiteToFilePath(suite) {
-       var lc = suite.toLowerCase();
-
-      const base = 'webapp/test/';   // 🔥 ADD THIS
-
-      if (lc.indexOf('navigation') !== -1 || lc.indexOf('journey') !== -1) {
-      return base + 'integration/NavigationJourney.js';
-       }
-      if (lc.indexOf('model') !== -1) {
-       return base + 'unit/model/models.js';
-      }
-      if (lc.indexOf('formatter') !== -1) {
-      return base + 'unit/util/formatter.js';
-      }
-      if (lc.indexOf('view1') !== -1 || lc.indexOf('controller') !== -1) {
-      return base + 'unit/controller/View1.controller.js';
-      }
-
-      return base + 'unit/' + suite.replace(/\s+/g, '_') + '.js';
+        var lc = suite.toLowerCase();
+        var base = 'webapp/test/';
+        if (lc.indexOf('navigation') !== -1 || lc.indexOf('journey') !== -1)
+          return base + 'integration/NavigationJourney.js';
+        if (lc.indexOf('model') !== -1)
+          return base + 'unit/model/models.js';
+        if (lc.indexOf('formatter') !== -1)
+          return base + 'unit/util/formatter.js';
+        if (lc.indexOf('view1') !== -1 || lc.indexOf('controller') !== -1)
+          return base + 'unit/controller/View1.controller.js';
+        return base + 'unit/AllTests.js';   // safe fallback: a file that exists
       }
 
       var xml = '<testExecutions version="1">\n';
-
       Object.keys(suiteMap).forEach(function(suite) {
-        var filePath = suiteToFilePath(suite);
-        xml += '  <file path="' + escapeXml(filePath) + '">\n';
-
+        xml += '  <file path="' + escapeXml(suiteToFilePath(suite)) + '">\n';
         suiteMap[suite].forEach(function(tc) {
           var duration = Math.max(Math.round(tc.time), 1);
           var name = escapeXml(tc.name);
-
           if (tc.skipped) {
             xml += '    <testCase name="' + name + '" duration="' + duration + '">\n';
-            xml += '      <skipped/>\n';
+            xml += '      <skipped message="skipped"/>\n';
             xml += '    </testCase>\n';
           } else if (!tc.success) {
             var msg = escapeXml((tc.log[0] || 'Test failed').substring(0, 500));
@@ -91,24 +74,20 @@ module.exports = function(config) {
             xml += '    <testCase name="' + name + '" duration="' + duration + '"/>\n';
           }
         });
-
         xml += '  </file>\n';
       });
-
       xml += '</testExecutions>\n';
 
       var reportsDir = path.join(__dirname, 'reports');
-      if (!fs.existsSync(reportsDir)) {
-        fs.mkdirSync(reportsDir, { recursive: true });
-      }
-      var outputPath = path.join(reportsDir, 'test-execution.xml');
+      if (!fs.existsSync(reportsDir)) fs.mkdirSync(reportsDir, { recursive: true });
+      // Capital T to match the pipeline: reports/Test-execution.xml
+      var outputPath = path.join(reportsDir, 'Test-execution.xml');
       fs.writeFileSync(outputPath, xml, 'utf8');
       console.log('[SonarGeneric] Written: ' + outputPath);
     };
   }
-
   SonarGenericReporter.$inject = ['baseReporterDecorator'];
-  // ─────────────────────────────────────────────────────────────────────────────
+  // ────────────────────────────────────────────────────────────────────
 
   config.set({
     frameworks: ['ui5', 'qunit', 'browserify', 'mocha'],
@@ -117,15 +96,15 @@ module.exports = function(config) {
       url: "https://sapui5.hana.ondemand.com",
       mode: "script",
       config: {
-        async: true,
-        resourceRoots: {
-          "ns.html5module": "/base/webapp"
-        }
+       async: true,
+       resourceRoots: {
+         "ns.html5module": "/base/webapp"      // lowercase — matches the app
+      }
       },
-      tests: [
-        "ns/html5module/test/unit/AllTests",
-        "ns/html5module/test/integration/AllJourneys"
-      ]
+    tests: [
+      "ns/html5module/test/unit/AllTests",       // lowercase
+      "ns/html5module/test/integration/AllJourneys"
+    ] 
     },
 
     files: [
@@ -133,17 +112,17 @@ module.exports = function(config) {
     ],
 
     preprocessors: {
-      // Only instrument source code — NOT test files — for accurate coverage
       'webapp/!(test)/**/*.js': ['coverage']
     },
 
-    // sonarqubeUnit intentionally EXCLUDED — it crashes with OPA5/QUnit
     reporters: ['progress', 'coverage', 'junit', 'sonarGeneric'],
 
     coverageReporter: {
       dir: 'reports',
       reporters: [
-        { type: 'cobertura', subdir: 'coverage', file: 'coverage.xml' },
+        // cobertura moved to its own subdir to avoid EEXIST collision
+        { type: 'cobertura', subdir: 'coverage-cobertura', file: 'coverage.xml' },
+        // lcov MUST stay in 'coverage' — pipeline reads reports/coverage/lcov.info
         { type: 'lcov',      subdir: 'coverage' },
         { type: 'text-summary' }
       ]
@@ -156,30 +135,16 @@ module.exports = function(config) {
       suite: 'KarmaTests'
     },
 
-    sonarQubeUnitReporter: {
-    sonarQubeVersion: 'LATEST',
-    outputFile: 'reports/test-execution.xml',
-    overrideTestDescription: true,
-    testPaths: ['webapp/test'],
-    testFilePattern: '.js',
-    useBrowserName: false
-    },
-    
     port: 9876,
     hostname: containerIp,
     listenAddress: '0.0.0.0',
-
     colors: true,
     logLevel: config.LOG_INFO,
     autoWatch: false,
-
-    // CRITICAL: false so karma exits with code 0 even when tests fail.
-    // This prevents Jenkins from treating test failures as build failures.
-    singleRun: true,
+    singleRun: true,             // runs once & exits; correct for CI
     failOnEmptyTestSuite: false,
 
     browsers: ['SeleniumChrome'],
-
     customLaunchers: {
       SeleniumChrome: {
         base: 'WebDriver',
