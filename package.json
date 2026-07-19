@@ -31,7 +31,9 @@
     "karma-ui5": "^2.4.0",
     "karma-webdriver-launcher": "^1.0.8",
     "mocha": "^11.7.5",
-    "qunit": "^2.25.0"
+    "qunit": "^2.25.0",
+    "karma-sonarqube-unit-reporter": "^0.0.23",
+    "ui5-test-runner": "^5.13.1"
   },
   "scripts": {
     "start": "fiori run --open \"test/flp.html#app-preview\"",
@@ -47,6 +49,7 @@
     "build:cf": "ui5 build preload --clean-dest --config ui5-deploy.yaml --include-task=generateCachebusterInfo",
     "undeploy": "cf undeploy nshtml5module --delete-services --delete-service-keys --delete-service-brokers",
     "test": "karma start",
+    "tests": "ui5-test-runner",
     "build:mta": "mbt build",
     "deploy:cf": "cross-var cf deploy mta_archives/nshtml5module_$npm_package_version.mtar",
     "deploy:cf-dev": "cross-var cf deploy mta_archives/nshtml5module_$npm_package_version.mtar -e mtaext/dev.mtaext",
